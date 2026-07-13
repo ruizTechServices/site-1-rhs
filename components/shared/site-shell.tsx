@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { ClipboardList, Hammer, ShieldCheck } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { ClipboardList, Hammer, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { getCurrentAuth } from "@/lib/auth/session";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
 
 type SiteShellProps = {
   readonly children: React.ReactNode;
 };
 
-export function SiteShell({ children }: SiteShellProps) {
+export async function SiteShell({ children }: SiteShellProps) {
+  const auth = getSupabasePublicConfig() ? await getCurrentAuth() : null;
+  const isSignedIn = Boolean(auth);
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-background/90 backdrop-blur">
@@ -22,21 +27,40 @@ export function SiteShell({ children }: SiteShellProps) {
             </span>
           </Link>
           <nav aria-label="Primary navigation" className="hidden items-center gap-2 md:flex">
-            <Link href="#status" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+            <Link href="/#status" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
               <ClipboardList data-icon="inline-start" aria-hidden="true" />
               Status
             </Link>
-            <Link href="#architecture" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+            <Link href="/#architecture" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
               <ShieldCheck data-icon="inline-start" aria-hidden="true" />
               Boundaries
             </Link>
+            {isSignedIn ? (
+              <>
+                <Link href="/account" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                  <UserRound data-icon="inline-start" aria-hidden="true" />
+                  Account
+                </Link>
+                <form action="/auth/sign-out?next=/" method="post">
+                  <Button type="submit" variant="ghost" size="sm">
+                    <LogOut data-icon="inline-start" aria-hidden="true" />
+                    Sign out
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                <LogIn data-icon="inline-start" aria-hidden="true" />
+                Login
+              </Link>
+            )}
           </nav>
         </div>
       </header>
       <main>{children}</main>
       <footer className="border-t bg-background">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted-foreground sm:px-6 lg:px-8">
-          <p>Project scaffold only. Customer requests, authentication, payments, and job operations are not live.</p>
+          <p>Phase 3 auth verification exists. Customer requests, payments, and job operations are not live.</p>
           <p>Authoritative rules live in AGENTS.md and maintained docs.</p>
         </div>
       </footer>

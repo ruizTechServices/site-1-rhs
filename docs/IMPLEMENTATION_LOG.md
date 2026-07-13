@@ -1,5 +1,330 @@
 # Implementation Log
 
+## 2026-07-13 - Repository Alignment and Cleanup
+
+### Summary
+
+- Reviewed the current uncommitted Phase 3 auth, logging, Supabase, script, configuration, and documentation surface against repository instructions and recent history.
+- Kept the implemented behavior intact while correcting smaller consistency issues found during review.
+- Removed tracked Supabase CLI local state from the repository and ignored local Obsidian app-state files.
+- Tightened logging consistency by masking the proxy session user ID and routing the client error-boundary log through the shared redacting logger.
+- Corrected architecture/status documentation that overstated migration application state for the first-login role-claim RPC.
+- Refreshed `docs/gio_context.md` so it reflects the current 2026 Phase 3 state instead of stale Phase 3 verification notes.
+
+### Files Updated
+
+- `.gitignore`: ignores `docs/**/.obsidian/` in addition to Supabase CLI `.temp` state.
+- `lib/supabase/proxy.ts`: masks the Supabase user ID in `auth.proxy.session_present` logs.
+- `app/error.tsx`: uses `logEvent()` so client error-boundary logs share the same redaction and runtime handling as the rest of the logging layer.
+- `scripts/verify-logging.mjs`: verifies the proxy masking pattern and the error-boundary logger integration.
+- `docs/ARCHITECTURE.md` and `lib/project/architecture-plan.ts`: clarify that the role-claim RPC migration exists locally but still needs to be applied.
+- `docs/gio_context.md`: replaces stale 2025 context with current Phase 3 status and pending verification work.
+
+### Files Removed
+
+- `supabase/.temp/cli-latest`: tracked Supabase CLI local state. `.gitignore` already treats `supabase/.temp/` as local-only, and the file is not referenced by source, scripts, docs, or runtime tooling.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- `npm run test:auth-routes`: passed.
+- `npm run test:logging`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+- `git diff --check`: passed.
+- `supabase --version`: passed and reported `2.106.0`.
+- `supabase migration list --local`: failed because local Supabase Postgres is not running on `127.0.0.1:54322`.
+- `npm audit --audit-level=moderate`: failed on the documented moderate PostCSS advisory through `next@16.2.10`; npm's offered fix is `npm audit fix --force`, which would downgrade Next to `9.3.3`, so no dependency change was made.
+- `git check-ignore`: confirmed local Obsidian app state and Supabase CLI `.temp` files are ignored.
+
+### Known Risks
+
+- The `claim_initial_app_role` migration is still pending application to the linked Supabase project.
+- Local Supabase migration-list validation still requires a running local Supabase Postgres service.
+- Browser-completed Google OAuth, magic-link, role-selection, and sign-out verification remain manual.
+- Automated RLS/IDOR tests are still missing.
+- The moderate transitive PostCSS advisory remains unresolved until Next ships or the project approves a safe dependency strategy.
+
+## 2026-07-12 - Obsidian Architecture Vault Scan
+
+### Summary
+
+- Scanned the repository instructions, maintained docs, current Git state, Obsidian vault folders, inbox notes, auth routes, Supabase helpers, logging utilities, protected route shells, verification scripts, and Phase 3 migrations.
+- Populated the previously empty permanent vault with linked architecture nodes describing the verified current system and blocked future boundaries.
+- Mapped the useful inbox product workflow note into the marketplace lifecycle node.
+- Removed empty/starter inbox notes after accounting for their content.
+
+### Files Added
+
+- `docs/Ruiz Home Services/permanent/Next.js App Router Scaffold Boundary.md`: current App Router scaffold and route inventory boundary.
+- `docs/Ruiz Home Services/permanent/Supabase Request Proxy Boundary.md`: proxy-level session refresh, protected-path redirect, and request logging boundary.
+- `docs/Ruiz Home Services/permanent/Supabase Server Client Boundary.md`: server and browser Supabase client configuration boundary.
+- `docs/Ruiz Home Services/permanent/Supabase Auth Start And Callback Flow.md`: Google OAuth, magic-link, callback, and sign-out flow.
+- `docs/Ruiz Home Services/permanent/Supabase Profile Role RLS Foundation.md`: Phase 3 profile, role, extension-table, grant, and RLS foundation.
+- `docs/Ruiz Home Services/permanent/Initial Role Claim RPC.md`: constrained first-login customer/handyman self-claim RPC.
+- `docs/Ruiz Home Services/permanent/Server Only Admin UUID Gate.md`: server-only admin allowlist boundary.
+- `docs/Ruiz Home Services/permanent/Role Protected Route Shells.md`: account, customer, handyman, and admin route-shell authorization pattern.
+- `docs/Ruiz Home Services/permanent/Structured JSON Logging Boundary.md`: structured logging, redaction, request ID, and 431 diagnostics boundary.
+- `docs/Ruiz Home Services/permanent/Marketplace Service Lifecycle Decision Gates.md`: planned customer-to-handyman lifecycle and unresolved product gates.
+- `docs/Ruiz Home Services/permanent/Square Payment Integration Boundary.md`: blocked Square payment architecture boundary.
+- `docs/Ruiz Home Services/permanent/Obsidian Architecture Knowledge Graph Workflow.md`: vault maintenance, linking, and inbox-to-permanent workflow.
+
+### Files Removed
+
+- `docs/Ruiz Home Services/inbox/create a link.md`: empty starter note.
+- `docs/Ruiz Home Services/inbox/Link Test.md`: starter link test mapped into the vault workflow node.
+- `docs/Ruiz Home Services/inbox/Ruiz Home Services.md`: starter vault placeholder mapped into the vault workflow node.
+- `docs/Ruiz Home Services/inbox/What is Ruiz Home Services.md`: product workflow note mapped into the marketplace lifecycle node.
+
+### Validation
+
+- Ran a Node-based permanent-note validator: all 12 generated note bodies measured between 250 and 300 words, every declared `Word Count` matched the measured count, and every Obsidian dependency link resolved to a generated permanent node.
+- Confirmed the source inbox notes were mapped before garbage collection.
+
+### Known Risks
+
+- The permanent vault was empty before this scan, so all dependency links are seeded among newly generated nodes rather than older maintained nodes.
+- These notes summarize the current local working tree, which already had substantial uncommitted changes before this scan.
+
+## 2026-07-10 - First-Login Role Choice and UUID Admin Gate
+
+### Summary
+
+- Added first-login role selection for authenticated users with no current role assignment.
+- Added a constrained Supabase RPC migration so users can claim exactly one initial `customer` or `handyman` role for themselves.
+- Kept `admin` out of self-selection.
+- Switched `/admin` from database-role access to a server-only Supabase Auth UUID allowlist through `RHS_ADMIN_USER_IDS`.
+- Looked up Gio's Supabase profile UUID from `public.profiles` for local admin configuration, then updated ignored local `.env` so the current dev server can load the admin UUID after restart.
+- Updated maintained docs and public status copy to distinguish customer/handyman role assignment from the admin UUID boundary.
+- Synchronized the existing Figma planning/design-system node with the role-choice and UUID-admin state.
+
+### Files Added
+
+- `app/account/actions.ts`: server action for validated first-login role selection.
+- `lib/auth/admin.ts`: server-only admin UUID allowlist parsing and `/admin` requirement helper.
+- `supabase/migrations/20260710231035_phase3_claim_initial_app_role.sql`: forward-only migration adding `public.claim_initial_app_role()`.
+
+### Files Updated
+
+- `app/account/page.tsx`: displays the Homeowner/Handyman prompt for signed-in users with no role and shows admin verification state.
+- `app/admin/page.tsx`: requires configured admin UUID access instead of `role_assignments` admin role access.
+- `lib/auth/types.ts`: added self-assignable role helpers for `customer` and `handyman`.
+- `lib/supabase/database.types.ts`: added the pending RPC type.
+- `scripts/verify-auth-routes.mjs`: verifies the role-choice action, constrained RPC migration, and UUID admin gate.
+- `.env.example`: added server-only `RHS_ADMIN_USER_IDS`.
+- `app/page.tsx` and `lib/project/architecture-plan.ts`: updated public status language.
+- `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and `docs/WEBSITE_IMPLEMENTATION_PLAN.md`: documented role selection, admin UUID gating, manual migration status, and verification requirements.
+
+### Security Notes
+
+- Runtime admin access no longer depends on Google email.
+- `RHS_ADMIN_USER_IDS` is server-only and must not be renamed with `NEXT_PUBLIC_`.
+- The role-claim RPC is `SECURITY DEFINER`, so it is intentionally narrow: it checks `auth.uid()`, locks the user's profile row before checking existing roles, excludes `admin`, blocks users with any existing role assignment, and only creates the matching customer or handyman profile extension.
+- Handyman self-selection is only a route-shell role for Phase 3. It is not provider verification, licensing, background check approval, payout eligibility, or job eligibility.
+
+### Validation
+
+- Queried `public.profiles` for Gio's profile row to identify the Supabase Auth UUID used in local admin configuration.
+- Updated Figma planning node `3:2` in file `0I1Bwb1F0NpYbvXCDU2xk3` and rendered the frame after synchronization.
+- Ran `npm run test:auth-routes`: passed.
+- Ran `npm run test:logging`: passed.
+- Ran `npm run typecheck`: passed.
+- Ran `npm run lint`: passed.
+- Ran `npm run build`: passed.
+- Ran `supabase migration list --local`: failed because the local Supabase Postgres service is not running on `127.0.0.1:54322`.
+
+### Known Risks
+
+- The migration file has been created but not applied to the linked Supabase project in this change because applying migrations requires explicit approval.
+- `/account` role selection will redirect with `role-selection=failed` until `20260710231035_phase3_claim_initial_app_role.sql` is applied.
+- `/admin` requires restarting the dev server after `.env` changes so Next.js reloads `RHS_ADMIN_USER_IDS`.
+- Automated RLS/IDOR tests still need to be added.
+
+## 2026-07-10 - Structured Logging and 431 Diagnostics
+
+### Summary
+
+- Audited the repository logging surface and found only narrow ad hoc console output in the login action plus script output.
+- Added a dependency-free structured JSON logging layer with redaction, request IDs, auth helpers, and request-size diagnostics.
+- Instrumented the request proxy, Supabase auth starts, OAuth callback, sign-out, session/profile/role helpers, Supabase server-client creation, and client error boundary.
+- Added aggregate header/cookie-size logging to diagnose `HTTP ERROR 431` without logging raw cookie values.
+- Added a static logging verifier and documented the local 431 recovery path.
+- Synchronized the existing Figma planning/design-system node with the structured logging and 431 diagnostics state.
+
+### Files Added
+
+- `lib/logging/logger.ts`: level-gated structured JSON logger controlled by optional `LOG_LEVEL`.
+- `lib/logging/redaction.ts`: redacts emails, tokens, JWT-like values, secrets, raw cookie headers, and authorization headers.
+- `lib/logging/request.ts`: request ID generation, `x-request-id` response propagation, aggregate header/cookie-size summaries, and largest cookie-name/size summaries.
+- `lib/logging/auth.ts`: masked user ID and sanitized auth error logging helpers.
+- `scripts/verify-logging.mjs`: static verifier for the logging layer and instrumented auth/request/error surfaces.
+
+### Files Updated
+
+- `lib/supabase/proxy.ts`: logs proxy request start/completion, protected-path redirects, Supabase claims failures, cookie refresh events, and near-limit headers/cookies.
+- `app/login/actions.ts`: replaced ad hoc auth-start logging with structured Google OAuth and magic-link start/success/failure logs.
+- `app/auth/callback/route.ts`: logs callback start, missing code, exchange success, and exchange failure.
+- `app/auth/sign-out/route.ts`: logs sign-out start, same-origin rejection, success, and failure.
+- `lib/auth/session.ts`, `lib/auth/profile.ts`, and `lib/auth/roles.ts`: logs session resolution, required-auth redirects, profile lookup outcomes, role lookup outcomes, and role denials.
+- `lib/supabase/server.ts`: logs missing Supabase public config and Server Component cookie-write skips.
+- `components/shared/site-shell.tsx`: avoids auth lookup when Supabase public config is absent and otherwise derives navigation from server auth state.
+- `app/error.tsx`: logs client error-boundary events with digest/path.
+- `package.json`: added `npm run test:logging`.
+- `.env.example`: added optional `LOG_LEVEL`.
+- `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and `docs/WEBSITE_IMPLEMENTATION_PLAN.md`: documented structured logging, validation, and HTTP 431 diagnostics.
+
+### Figma Artifact
+
+- Updated planning node: https://www.figma.com/design/0I1Bwb1F0NpYbvXCDU2xk3/Ruiz-Home-Services---Website-Plan-and-Design-System-v0?node-id=3-2&t=BkJ1yzqvFFq3D3cQ-1
+- Updated cover evidence, current-state inventory, component/page mapping, Figma-to-code mapping, Phase 3 card, and validation card to reflect structured logging and 431 diagnostics.
+- Rendered the planning frame after updates.
+
+### Validation
+
+- Ran `npm run test:auth-routes`: passed.
+- Ran `npm run test:logging`: passed.
+- Ran `npm run typecheck`: passed.
+- Ran `npm run lint`: passed.
+- Ran `npm run build`: passed.
+- Started a temporary production server at `http://127.0.0.1:3100`.
+- Verified `/` returned HTTP 200.
+- Verified `/account` with a synthetic 8.5 KB cookie returned HTTP 307 to login and emitted `request.headers.near_limit`.
+- Verified large-cookie logs include aggregate header bytes, cookie header bytes, cookie count, largest cookie name/size, and a usable `x-request-id`.
+- Stopped the temporary production server and confirmed port 3100 was clear.
+- Initial `npm run test:logging` caught an overly strict verifier pattern and was corrected.
+- Initial runtime smoke caught request ID over-redaction and was corrected.
+- Rendered the synchronized Figma planning frame after logging updates.
+
+### Known Risks
+
+- HTTP 431 can be rejected by the browser/dev server before app proxy code executes. If no `request.proxy.start` log appears for `/account`, clear `localhost:3000` cookies and retry.
+- The logging layer currently writes to process/browser console only. Persistent administrative audit logs are still a future database-backed requirement for sensitive product operations.
+- Cookie values, tokens, OAuth codes, emails, and secrets must remain excluded from logs.
+
+## 2026-07-10 - Phase 3 Google OAuth and Session-Aware Nav
+
+### Summary
+
+- Added an app-side Supabase Google OAuth start action on `/login`.
+- Kept the existing magic-link flow and reused the existing `/auth/callback` PKCE/OAuth exchange route.
+- Added sanitized structured server logging for Supabase auth-start failures without logging email addresses, tokens, cookies, or provider secrets.
+- Made the primary desktop navigation session-aware: signed-out users see Login, while signed-in users see Account and POST-only Sign out.
+- Confirmed the Phase 3 migrations are already applied to Supabase project `csmisxwwrcyzttvybnsn` through Supabase MCP.
+- Updated maintained docs to distinguish implemented app-side OAuth support from still-required Supabase/Google provider configuration.
+- Synchronized the existing Figma planning/design-system node with the Google OAuth and session-aware navigation state.
+
+### Files Updated
+
+- `app/login/actions.ts`: added Google OAuth start action, OAuth redirect construction, and sanitized auth-start failure logging.
+- `app/login/page.tsx`: added Continue with Google control while keeping magic-link sign-in.
+- `components/shared/site-shell.tsx`: made auth navigation derive from the server Supabase session.
+- `scripts/verify-auth-routes.mjs`: added static checks for Google OAuth and session-aware nav behavior.
+- `.env.example`: clarified that Google OAuth provider secrets are configured in Supabase, not in the Next.js app.
+- `.gitignore`: ignored local Supabase CLI `.temp` linkage/cache files.
+- `app/page.tsx` and `lib/project/architecture-plan.ts`: updated public status copy for Google OAuth and session-aware navigation.
+- `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and `docs/WEBSITE_IMPLEMENTATION_PLAN.md`: updated setup instructions, auth boundaries, route inventory, validation notes, and incomplete provider-configuration status.
+
+### Figma Artifact
+
+- Updated planning node: https://www.figma.com/design/0I1Bwb1F0NpYbvXCDU2xk3/Ruiz-Home-Services---Website-Plan-and-Design-System-v0?node-id=3-2&t=BkJ1yzqvFFq3D3cQ-1
+- Updated current-state inventory, atomic-design organism/template/page notes, component/page hierarchy, Figma-to-code mapping, Phase 3 card, and validation card.
+- Rendered the planning frame after updates and confirmed it reflects app-side Google OAuth, session-aware navigation, and still-blocked provider/browser verification.
+
+### Validation
+
+- Fetched the Supabase changelog and checked auth-related 2026 entries before implementing.
+- Checked current Supabase Google OAuth and redirect URL docs.
+- Inspected `.env` without printing secret values; required public Supabase variables are set in `.env`, and `.env.local` is absent.
+- Confirmed Supabase MCP migration history contains `20260710145632`, `20260710145728`, `20260710150517`, and `20260710150807`.
+- Confirmed Supabase MCP table inventory shows `profiles`, `role_assignments`, `customer_profiles`, and `handyman_profiles` with RLS enabled.
+- Ran Supabase security advisors: one warning remains for leaked password protection being disabled in Supabase Auth.
+- Ran `npm run test:auth-routes`: passed.
+- Ran `npm run typecheck`: passed.
+- Ran `npm run lint`: passed.
+- Ran `npm run build`: passed. Production output now marks `/` as dynamic because the shared shell reads session state for the nav.
+- Started a temporary production server at `http://127.0.0.1:3100`.
+- Verified `/` returned HTTP 200.
+- Verified `/login?next=%2Faccount` returned HTTP 200 and contained both Continue with Google and Send magic link controls.
+- Verified unauthenticated `/account` returned HTTP 307 to `/login?next=%2Faccount`.
+- Stopped the temporary production server and confirmed port 3100 was clear.
+- Rendered the synchronized Figma planning frame after updates.
+
+### Known Risks
+
+- Google OAuth cannot complete until Gio finishes Google Cloud client creation, enables the Google provider in Supabase Auth, and adds the app callback URL to the Supabase redirect allowlist.
+- Magic-link failure shown in the browser is still a Supabase Auth request-start/configuration failure, not a database migration issue.
+- Supabase CLI `migration list --linked` failed locally with a 403 and missing `SUPABASE_DB_PASSWORD`; Supabase MCP confirmed the remote migration state instead.
+- Browser-completed Google OAuth and magic-link verification remain required.
+- Automated cross-user RLS/IDOR tests still need to be implemented.
+- Protected route shells remain verification surfaces, not product dashboards.
+
+## 2026-07-10 - Phase 3 Auth UI and Protected Route Shells
+
+### Summary
+
+- Continued Phase 3 by adding a Supabase magic-link verification UI, authenticated account shell, and server-gated customer, handyman, and admin route shells.
+- Added a proxy-level unauthenticated redirect guard for `/account`, `/customer`, `/handyman`, and `/admin` so anonymous requests are redirected before protected page rendering when possible.
+- Kept role authorization server-side through trusted `role_assignments`; no client-provided role or user metadata is trusted.
+- Added a static auth-route verifier and synchronized local docs plus the Figma planning node.
+
+### Files Added
+
+- `app/login/actions.ts`: validates email and safe redirect targets before requesting a Supabase magic link.
+- `app/login/page.tsx`: Phase 3 magic-link sign-in verification page.
+- `app/account/page.tsx`: authenticated account boundary shell that loads current-user profile and role data.
+- `app/customer/page.tsx`: customer-role protected route shell.
+- `app/handyman/page.tsx`: handyman-role protected route shell.
+- `app/admin/page.tsx`: admin-role protected route shell.
+- `components/shared/protected-route-shell.tsx`: shared presentation shell for protected route verification surfaces.
+- `scripts/verify-auth-routes.mjs`: static guard verifier for Phase 3 auth route files.
+
+### Files Updated
+
+- `lib/supabase/proxy.ts`: added protected-prefix unauthenticated redirects using Supabase `getClaims()`.
+- `app/auth/sign-out/route.ts`: added same-origin POST guard when an `Origin` header is present.
+- `lib/auth/redirects.ts`: added safe login/result/forbidden redirect helpers.
+- `lib/auth/session.ts`: added path-aware auth requirement helper.
+- `lib/auth/roles.ts`: added user-specific role lookup and path-aware role requirement helper.
+- `lib/auth/profile.ts`: added user-specific profile lookup helper.
+- `components/shared/site-shell.tsx`: updated navigation and Phase 3 footer copy.
+- `app/page.tsx` and `lib/project/architecture-plan.ts`: updated public current-state counts and Phase 3 status.
+- `package.json`: added `npm run test:auth-routes`.
+- `.env.example`: added `NEXT_PUBLIC_APP_URL`.
+- `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and `docs/WEBSITE_IMPLEMENTATION_PLAN.md`: updated route inventory, auth boundaries, testing instructions, unresolved risks, and implementation status.
+
+### Figma Artifact
+
+- Updated planning node: https://www.figma.com/design/0I1Bwb1F0NpYbvXCDU2xk3/Ruiz-Home-Services---Website-Plan-and-Design-System-v0?node-id=3-2&t=BkJ1yzqvFFq3D3cQ-1
+- Updated current-state inventory, route/component counts, Git status, atomic design mappings, component/page hierarchy, Figma-to-code mapping, Phase 3 card, validation card, and blocked-decision text.
+- Rendered the planning frame after updates and fixed remaining stale hierarchy/cover text.
+
+### Validation
+
+- Fetched the Supabase changelog and checked current Supabase SSR Auth guidance before implementing.
+- Queried Supabase docs for `signInWithOtp`, Next.js SSR Auth, and `getClaims()` guidance.
+- Ran `npm run test:auth-routes`: passed.
+- Ran `npm run typecheck`: passed.
+- Ran `npm run lint`: passed.
+- Ran `npm run build`: passed. Build output includes `/`, `/_not-found`, `/login`, `/account`, `/customer`, `/handyman`, `/admin`, `/auth/callback`, `/auth/sign-out`, and Proxy middleware.
+- Ran Supabase security advisors for project `csmisxwwrcyzttvybnsn`: no lints.
+- Ran `npm audit --audit-level=moderate`: failed on the known moderate `postcss` advisory through `next@16.2.10`; npm's forced fix would install obsolete `next@9.3.3`.
+- Started a temporary production server at `http://127.0.0.1:3100` with placeholder public Supabase config.
+- Verified `/` returned HTTP 200.
+- Verified `/login` returned HTTP 200.
+- Verified `/account` returned HTTP 307 to `/login?next=%2Faccount`.
+- Verified `/customer` returned HTTP 307 to `/login?next=%2Fcustomer`.
+- Stopped the temporary production server and confirmed port 3100 was clear.
+
+### Known Risks
+
+- In-app browser automation timed out during `/login` visual verification; HTTP production smoke passed, but browser screenshot validation was not completed.
+- A separate Next dev server was already running on port 3000; it was not started or stopped by this work.
+- Manual magic-link/OAuth verification with a real Supabase publishable key and email inbox remains required.
+- Automated cross-user RLS/IDOR tests still need to be implemented.
+- Role assignment remains an admin/service-role operational decision; no role-assignment mutation workflow was added.
+- Protected route shells are not final customer, handyman, or admin dashboards.
+- Service requests, jobs, Square payments, webhooks, refunds, payouts, and final product workflows remain unimplemented.
+
 ## 2026-07-10 - Phase 3 Supabase Auth/Profile Backend Foundation
 
 ### Summary

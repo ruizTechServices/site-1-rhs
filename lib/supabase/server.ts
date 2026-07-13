@@ -3,10 +3,29 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/lib/supabase/database.types";
-import { requireSupabasePublicConfig } from "@/lib/supabase/config";
+import { logEvent } from "@/lib/logging/logger";
+import {
+  requireSupabasePublicConfig,
+  type SupabasePublicConfig,
+} from "@/lib/supabase/config";
 
 export async function createSupabaseServerClient() {
-  const config = requireSupabasePublicConfig();
+  let config: SupabasePublicConfig;
+
+  try {
+    config = requireSupabasePublicConfig();
+  } catch (error) {
+    logEvent({
+      context: {
+        error,
+      },
+      event: "supabase.server.config_missing",
+      level: "error",
+      message: "Supabase server client could not be created because public config is missing.",
+    });
+    throw error;
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient<Database>(config.url, config.publishableKey, {
@@ -20,7 +39,15 @@ export async function createSupabaseServerClient() {
             cookieStore.set(name, value, options);
           });
         } catch {
-          // Server Components cannot write cookies. The request proxy refreshes sessions.
+          logEvent({
+            context: {
+              cookieCount: cookiesToSet.length,
+              cookieNames: cookiesToSet.map(({ name }) => name),
+            },
+            event: "supabase.server.cookie_write_skipped",
+            level: "debug",
+            message: "Server Component cookie write skipped; proxy owns session refresh.",
+          });
         }
       },
     },

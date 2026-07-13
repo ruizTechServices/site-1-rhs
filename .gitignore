@@ -6,6 +6,12 @@ node_modules/
 out/
 tsconfig.tsbuildinfo
 
+# Supabase local CLI state
+supabase/.temp/
+
+# Local Obsidian app state
+docs/**/.obsidian/
+
 # production
 build/
 

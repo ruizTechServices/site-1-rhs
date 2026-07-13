@@ -8,10 +8,10 @@ export type ArchitecturePhase = {
 };
 
 export const currentStateItems = [
-  { label: "Implemented routes", value: "1 page, 2 auth handlers" },
-  { label: "Code components", value: "12" },
-  { label: "Supabase tables", value: "4 Phase 3 tables" },
-  { label: "Git repository", value: "Not initialized" },
+  { label: "Implemented routes", value: "6 pages, 2 auth handlers" },
+  { label: "Code components", value: "13" },
+  { label: "Supabase backend", value: "4 tables, 1 pending RPC migration" },
+  { label: "Git repository", value: "Initialized on main" },
 ] as const;
 
 export const architecturePhases: readonly ArchitecturePhase[] = [
@@ -37,7 +37,7 @@ export const architecturePhases: readonly ArchitecturePhase[] = [
     id: "phase-3",
     title: "Auth and Roles",
     status: "current",
-    objective: "Supabase Auth callback, trusted profiles, role lookup, and RLS foundation.",
+    objective: "Supabase Auth, Google and magic-link starts, account shell, first-login customer/handyman role choice, server-only admin UUID gate, trusted profile/role lookup, and RLS foundation.",
   },
   {
     id: "phase-4",
@@ -66,9 +66,10 @@ export const architecturePhases: readonly ArchitecturePhase[] = [
 ] as const;
 
 export const architectureBoundaries = [
-  "Next.js App Router renders the public shell plus Supabase auth route handlers.",
+  "Next.js App Router renders the public shell, session-aware navigation, auth UI, account role-choice UI, protected route shells, and Supabase auth route handlers.",
   "Server modules will own validation, authorization, pricing, payments, and logging.",
-  "Supabase now owns the profile and trusted role foundation with RLS-enabled tables.",
+  "Supabase owns the profile and trusted customer/handyman role foundation with RLS-enabled tables and a constrained initial-role RPC.",
+  "Admin dashboard access is server-only and keyed by Supabase Auth UUID allowlist, not Google email.",
   "Square remains blocked until payment policy, idempotency, and webhook handling are ready.",
 ] as const;
 

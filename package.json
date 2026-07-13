@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:auth-routes": "node scripts/verify-auth-routes.mjs",
+    "test:logging": "node scripts/verify-logging.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.0",

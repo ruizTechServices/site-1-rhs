@@ -132,7 +132,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      claim_initial_app_role: {
+        Args: { requested_role: Database["public"]["Enums"]["app_role"] };
+        Returns: Database["public"]["Enums"]["app_role"];
+      };
     };
     Enums: {
       app_role: "customer" | "handyman" | "admin";

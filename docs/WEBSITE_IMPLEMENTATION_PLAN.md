@@ -2,7 +2,7 @@
 
 ## 1. Evidence and Scope
 
-Date: 2026-07-08 baseline, updated by Phase 3 backend foundation on 2026-07-10
+Date: 2026-07-08 baseline, updated by Phase 3 auth-boundary slice on 2026-07-10
 
 Workspace inspected:
 
@@ -27,7 +27,7 @@ Figma artifacts for this plan:
 - Design-system and planning node: https://www.figma.com/design/0I1Bwb1F0NpYbvXCDU2xk3/Ruiz-Home-Services---Website-Plan-and-Design-System-v0?node-id=3-2&t=BkJ1yzqvFFq3D3cQ-1
 - FigJam flowchart board: https://www.figma.com/board/khKj0SwtkVYeXWajCPaWjO
 
-The design-system planning node was synchronized with the Phase 1 scaffold state on 2026-07-10. The local maintained docs now also reflect the Phase 3 backend foundation.
+The design-system planning node was synchronized with the Phase 3 first-login role selection and UUID-admin state on 2026-07-10. The local maintained docs now also reflect the same slice.
 
 Important restriction:
 
@@ -38,20 +38,25 @@ This plan treats only verified code and applied migrations as implemented. Custo
 | Area | Current status | Evidence |
 |---|---:|---|
 | Application scaffold | Implemented baseline | `package.json`, `app/`, Next.js config |
-| Routes/pages | 1 public page and 2 auth route handlers implemented | `app/page.tsx`, `app/auth/*/route.ts` |
-| Components | 12 reusable components implemented | `components/ui/*`, `components/shared/*` |
+| Routes/pages | 6 pages and 2 auth route handlers implemented | `app/page.tsx`, `app/login/*`, `app/account/*`, `app/customer/*`, `app/handyman/*`, `app/admin/*`, `app/auth/*/route.ts` |
+| Components | 13 reusable components implemented | `components/ui/*`, `components/shared/*` |
 | Feature modules | 0 implemented | No `features/` directory |
-| Auth | Backend foundation implemented, UI incomplete | `lib/auth/*`, `lib/supabase/*`, `app/auth/*/route.ts` |
-| Database | Phase 3 profile/role schema implemented | `supabase/migrations/*`, live Supabase project `csmisxwwrcyzttvybnsn` |
+| Auth | Google OAuth start, magic-link verification UI, session-aware nav, first-login customer/handyman role selection, server-only admin UUID gate, and protected route shells implemented; browser verification incomplete | `app/login/*`, `app/account/*`, `app/customer/*`, `app/handyman/*`, `app/admin/*`, `components/shared/site-shell.tsx`, `lib/auth/*`, `lib/supabase/*`, `app/auth/*/route.ts` |
+| Database | Phase 3 profile/role schema implemented; first-role-claim RPC migration created but not yet applied | `supabase/migrations/*`, live Supabase project `csmisxwwrcyzttvybnsn` |
 | Payments | Not implemented | No Square adapter or webhook route |
-| Tests | Static validation only | typecheck, lint, build scripts |
+| Tests | Static validation, auth-route verifier, and logging verifier only | typecheck, `test:auth-routes`, `test:logging`, lint, build scripts |
 | Docs | Baseline plus testing guide | `README.md`, `docs/*` |
-| Git | Not initialized here | `git status` failed with "not a git repository" |
+| Git | Initialized on `main` with GitHub remote | `git rev-parse`, `git remote -v` |
 
 Existing implemented pages:
 
 ```text
 /
+/login
+/account
+/customer
+/handyman
+/admin
 /auth/callback
 /auth/sign-out
 /_not-found
@@ -60,8 +65,15 @@ Existing implemented pages:
 Existing implemented user flows:
 
 ```text
+Supabase Google OAuth sign-in can be started from `/login`.
+Supabase magic-link sign-in can be requested from `/login`.
 Supabase OAuth/PKCE callback can exchange an auth code for a cookie-backed session.
 POST /auth/sign-out signs out the current Supabase session.
+Unauthenticated protected-route visits redirect to `/login?next=...`.
+The primary nav displays Login for signed-out users and Account/Sign out for signed-in users.
+Signed-in users with no role are prompted to choose Homeowner (`customer`) or Handyman (`handyman`).
+Customer and handyman route shells require trusted server-side role lookup.
+Admin route shell requires server-only Supabase Auth UUID allowlist membership.
 ```
 
 Existing implemented reusable UI components:
@@ -77,20 +89,20 @@ components/ui/label.tsx
 components/ui/select.tsx
 components/ui/textarea.tsx
 components/shared/phase-grid.tsx
+components/shared/protected-route-shell.tsx
 components/shared/site-shell.tsx
 components/shared/status-panel.tsx
 ```
 
 ## 3. Approved But Incomplete Work
 
-These items are approved as project direction in `AGENTS.md`, but they are not fully implemented beyond the public scaffold, design foundation, and Phase 3 backend foundation:
-- Sign-in/register UI.
-- Protected route shells for customer, handyman, and admin surfaces.
-- Browser-verified OAuth flow.
+These items are approved as project direction in `AGENTS.md`, but they are not fully implemented beyond the public scaffold, design foundation, and Phase 3 auth foundation:
+- Supabase Google provider configuration and browser-verified magic-link/OAuth flow.
+- Applying and verifying the first-login `claim_initial_app_role` migration.
 - Automated RLS and IDOR/BOLA tests.
 - Square payment integration.
 - Vercel-first deployment.
-- Customer, handyman, and administrator surfaces.
+- Final customer, handyman, and administrator product surfaces.
 - Server-authoritative rate and money calculations.
 - Integer-cent monetary storage and calculation.
 - Customer minimum rate of 3000 cents per hour.
@@ -160,7 +172,7 @@ Trust and safety:
 Authentication and communication:
 
 - Supabase Auth versus another provider.
-- OAuth methods.
+- Additional OAuth methods beyond Google.
 - Email/password launch support.
 - Phone verification.
 - Admin MFA.
@@ -177,7 +189,7 @@ https://www.figma.com/board/khKj0SwtkVYeXWajCPaWjO
 
 Diagrams created:
 
-- `RHS Current State Route Inventory`: originally captured the pre-scaffold state; the current implementation now has one public route.
+- `RHS Current State Route Inventory`: originally captured the pre-scaffold state; the current implementation now has a public route, auth verification route with Google OAuth and magic-link controls, protected account shell, three role shells, and two auth handlers.
 - `RHS Approved Lifecycle With Decision Gates`: maps the approved high-level service lifecycle while marking assignment, payment, and payout as unresolved.
 - `RHS Role And Authorization Boundaries`: maps authentication, trusted role lookup, ownership checks, RLS, and blocked support-role expansion.
 - `RHS Approved Target Architecture Boundaries`: maps the approved Next.js, Supabase, Square, and Vercel target architecture as a planning diagram.
@@ -243,6 +255,7 @@ Current code mapping:
 components/ui/empty-state.tsx
 components/shared/status-panel.tsx
 components/shared/phase-grid.tsx
+components/shared/protected-route-shell.tsx
 lib/auth/redirects.ts
 ```
 
@@ -271,7 +284,13 @@ Current code mapping:
 
 ```text
 components/shared/site-shell.tsx
+components/shared/protected-route-shell.tsx
 app/page.tsx
+app/login/page.tsx
+app/account/page.tsx
+app/customer/page.tsx
+app/handyman/page.tsx
+app/admin/page.tsx
 app/auth/callback/route.ts
 app/auth/sign-out/route.ts
 proxy.ts
@@ -281,13 +300,14 @@ Payment organisms are blocked until the payment model is decided.
 
 ### Templates
 
-No templates currently exist.
-
-Proposed future templates:
+Current template-like shells:
 
 - Public shell.
 - Auth form shell.
-- Role-protected app shell.
+- Role-protected route shell.
+
+Proposed future templates:
+
 - Service-request workflow shell.
 - Admin operations shell.
 
@@ -299,11 +319,16 @@ Complete implemented pages:
 
 ```text
 /
+/login
+/account
+/customer
+/handyman
+/admin
 ```
 
 Reason:
 
-The only implemented page is the public scaffold/status shell. Customer, handyman, admin, service-request, auth, and payment pages remain unimplemented.
+The implemented pages are the public scaffold/status shell, the auth verification form with Google OAuth and magic-link controls, the authenticated account shell, and role-protected route shells. Customer, handyman, admin, service-request, and payment product workflows remain unimplemented.
 
 ## 8. Component and Page Hierarchy
 
@@ -321,11 +346,22 @@ postcss.config.mjs
 components.json
 .gitignore
 app/
+  account/
+    page.tsx
+  admin/
+    page.tsx
   auth/
     callback/
       route.ts
     sign-out/
       route.ts
+  customer/
+    page.tsx
+  handyman/
+    page.tsx
+  login/
+    actions.ts
+    page.tsx
   globals.css
   layout.tsx
   page.tsx
@@ -342,6 +378,8 @@ lib/
   utils.ts
 supabase/
   migrations/
+scripts/
+  verify-auth-routes.mjs
 docs/
   ARCHITECTURE.md
   IMPLEMENTATION_LOG.md
@@ -438,6 +476,7 @@ Validation:
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
 - `npm run build`: passed.
+- `npm run test:logging`: added during Phase 3 logging instrumentation.
 - Local HTTP and Chrome render checks passed.
 
 Risks:
@@ -486,6 +525,16 @@ Implemented outcome:
 
 - Supabase Auth SSR client setup with request-scoped server client.
 - Auth callback and sign-out route handlers.
+- Proxy-level unauthenticated redirect guard for protected route prefixes.
+- Google OAuth start action.
+- Magic-link login verification UI.
+- Session-aware primary navigation.
+- Structured JSON logging across proxy, auth actions, callback, sign-out, auth helpers, request-size diagnostics, and client error boundary.
+- Authenticated account shell.
+- Server-side role-gated `/customer`, `/handyman`, and `/admin` route shells.
+- First-login role selection prompt for signed-in users with no role.
+- Constrained Supabase RPC migration for claiming exactly one initial `customer` or `handyman` role.
+- Server-only `RHS_ADMIN_USER_IDS` allowlist for `/admin`, independent of Google email and database role rows.
 - Generated database types.
 - `profiles`, `role_assignments`, `customer_profiles`, and `handyman_profiles` tables.
 - Owner-scoped RLS policies on user-owned tables.
@@ -496,27 +545,31 @@ Implemented outcome:
 
 Remaining Phase 3 work:
 
-- Sign-in/register UI.
-- Protected customer, handyman, and admin route shells.
-- Manual browser OAuth verification.
+- Apply the `claim_initial_app_role` migration to the linked Supabase project after review.
+- Supabase Google provider configuration verification.
+- Manual browser magic-link/OAuth and role-selection verification.
 - Automated RLS and cross-user authorization tests.
 - Admin service-role boundary for role assignment, if approved.
 
 Validation:
 
 - TypeScript type check.
+- Static auth-route verification.
 - ESLint.
 - Next production build.
 - Supabase table inventory.
 - Supabase security advisors.
 - Supabase policy and grant SQL inspection.
-- Manual browser OAuth and cross-user RLS tests remain required.
+- Manual browser auth and cross-user RLS tests remain required.
+- Google OAuth still requires Supabase Dashboard and Google Cloud provider configuration before end-to-end verification.
+- Logging verification through `npm run test:logging`.
 
 Risks:
 
 - Admin MFA policy is unresolved.
-- Admin role-assignment workflow is unresolved.
-- Product route shells are not complete.
+- Admin role-assignment workflow is unresolved; current admin dashboard access is limited to configured UUID allowlist.
+- Handyman self-selection does not imply verified provider onboarding, licensing, background checks, or payout eligibility.
+- Product workflows behind the route shells are not complete.
 - No dedicated test runner exists yet.
 
 ### Phase 4 - Customer Service Request Intake
@@ -702,6 +755,8 @@ Current validation commands:
 
 ```text
 npm run typecheck
+npm run test:auth-routes
+npm run test:logging
 npm run lint
 npm run build
 ```
@@ -713,6 +768,7 @@ Expected validation as implementation matures:
 - Type checking.
 - Unit tests for domain logic.
 - Route/action tests for validation and authorization.
+- Structured logging verification.
 - Supabase RLS tests.
 - Payment adapter tests.
 - Webhook tests.
@@ -739,6 +795,9 @@ Phase 3 is done only when:
 - Profile and role-assignment schema exists through forward-only migrations. Completed.
 - RLS policies protect user-owned tables. Completed for Phase 3 tables.
 - Server-side auth and authorization helpers exist. Completed for current-role/profile lookup.
-- Customer, handyman, and admin protected shells enforce trusted role lookup.
+- Google OAuth and magic-link start actions exist. Completed for app-side start flows; Supabase/Google provider configuration still requires manual verification.
+- Customer and handyman protected shells enforce trusted role lookup. Completed for route shells.
+- Admin protected shell enforces the server-only Supabase Auth UUID allowlist. Completed in code, pending local server restart/env verification.
+- First-login role selection exists in code. Pending migration application and browser verification.
 - Anonymous, cross-user, and non-admin access tests pass.
 - Documentation and implementation log are updated.

@@ -21,14 +21,14 @@ export default function Home() {
           <div className="flex min-w-0 flex-col gap-6">
             <div className="flex items-center gap-3 text-sm font-medium text-primary">
               <ClipboardCheck aria-hidden="true" />
-              Phase 3 backend foundation underway
+              Phase 3 auth boundary underway
             </div>
             <div className="flex flex-col gap-4">
               <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
                 Ruiz Home Services platform foundation
               </h1>
               <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                A conservative Next.js baseline for the NYC home-services marketplace. The shell exposes current architecture status without pretending that requests, auth, jobs, or payments are live.
+                A conservative Next.js baseline for the NYC home-services marketplace. The shell exposes current architecture status without pretending that requests, jobs, or payments are live.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -67,7 +67,7 @@ export default function Home() {
               <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
                 <li className="flex gap-3">
                   <LockKeyhole aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
-                  <span className="min-w-0">Supabase Auth has backend scaffolding, but no sign-in UI or protected product workflow is live.</span>
+                  <span className="min-w-0">Supabase Auth has Google OAuth, magic-link verification UI, first-login role choice, and protected route shells, but no product workflow is live.</span>
                 </li>
                 <li className="flex gap-3">
                   <LockKeyhole aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
@@ -75,7 +75,7 @@ export default function Home() {
                 </li>
                 <li className="flex gap-3">
                   <LockKeyhole aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
-                  <span className="min-w-0">Customer, handyman, and admin surfaces are intentionally absent.</span>
+                  <span className="min-w-0">Customer and handyman shells verify trusted role gates; admin uses a server-only Supabase UUID allowlist.</span>
                 </li>
               </ul>
             </div>
@@ -88,7 +88,7 @@ export default function Home() {
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold">Current state</h2>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-              The repository now has a minimal executable scaffold, reusable UI primitives, and the first Supabase Auth/Profile backend foundation. Feature workflows remain intentionally unimplemented.
+              The repository now has a minimal executable scaffold, reusable UI primitives, Supabase Auth/Profile foundations, first-login role choice, and protected route shells. Feature workflows remain intentionally unimplemented.
             </p>
           </div>
           <StatusPanel items={currentStateItems} />
@@ -100,7 +100,7 @@ export default function Home() {
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold">Implementation phases</h2>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-              Phase 1 and the initial Phase 2 foundation are complete. Phase 3 now has Supabase schema and auth-route groundwork, while product workflows still require authorization and policy follow-through.
+              Phase 1 and the initial Phase 2 foundation are complete. Phase 3 now has Supabase schema, Google OAuth and magic-link auth UI, session-aware navigation, first-login role choice, server-only admin UUID gating, and protected route shells, while product workflows still require authorization tests and policy follow-through.
             </p>
           </div>
           <PhaseGrid phases={architecturePhases} />
@@ -136,7 +136,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <EmptyState
             title="No customer workflow exists yet"
-            description="The backend now has profile and role foundations, but customer request forms, dashboards, service jobs, and payments are still intentionally absent."
+            description="The app now has profile, role, login, first-login role choice, session-aware navigation, and protected-route foundations, but customer request forms, dashboards, service jobs, and payments are still intentionally absent."
           />
         </div>
       </section>

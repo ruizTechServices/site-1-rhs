@@ -193,9 +193,14 @@ As of 2026-07-10, the repository is currently understood to include:
 ```text
 .next/
 app/
+  account/
+  admin/
   auth/
     callback/
     sign-out/
+  customer/
+  handyman/
+  login/
   globals.css
   layout.tsx
   page.tsx
@@ -210,6 +215,7 @@ lib/
 node_modules/
 supabase/
   migrations/
+scripts/
 .env.example
 .gitignore
 components.json
@@ -232,11 +238,17 @@ Current implemented backend foundation:
 - These Phase 3 tables have RLS enabled.
 - `anon` has no table grants on the Phase 3 tables.
 - `authenticated` has only `select`, `insert`, and `update` on owned profile tables and only `select` on `role_assignments`.
-- `role_assignments` is the trusted application role source for `customer`, `handyman`, and `admin`.
-- Application clients must not self-assign roles.
-- The app currently reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- `role_assignments` is the trusted application role source for `customer` and `handyman` route shells.
+- Initial `customer` or `handyman` role selection is allowed only through the constrained `public.claim_initial_app_role()` RPC for the current authenticated user with no existing role assignment.
+- Application clients must not directly insert, update, or delete `role_assignments`.
+- Admin dashboard access is gated by the server-only `RHS_ADMIN_USER_IDS` Supabase Auth UUID allowlist, not by Google email and not by a database role assignment alone.
+- The app currently reads `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, optional `LOG_LEVEL`, and server-only `RHS_ADMIN_USER_IDS`.
 - No application code currently reads a Supabase service-role key.
-- The auth UI, protected product route shells, browser OAuth verification, and automated RLS tests are still incomplete.
+- The Google OAuth start UI, magic-link auth UI, session-aware navigation, authenticated account shell, first-login customer/handyman role choice, and protected role route shells exist as verification surfaces.
+- Structured JSON logging exists for proxy requests, request IDs, header/cookie size diagnostics, Supabase auth starts/callback/sign-out, auth/profile/role helper outcomes, and the client error boundary.
+- `proxy.ts` and `lib/supabase/proxy.ts` enforce unauthenticated redirects for `/account`, `/customer`, `/handyman`, and `/admin` before page rendering when possible.
+- Supabase/Google provider configuration, browser magic-link/OAuth verification, and automated RLS tests are still incomplete.
+- The protected route shells are not final customer, handyman, or admin product dashboards.
 
 ### 4.2 Next.js First
 
@@ -1505,6 +1517,7 @@ The exact names must follow the codebase, but likely categories include:
 NEXT_PUBLIC_APP_URL
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+RHS_ADMIN_USER_IDS
 SUPABASE_SERVICE_ROLE_KEY (not currently read by app code)
 
 SQUARE_ENVIRONMENT
@@ -1530,6 +1543,7 @@ Rules:
 - Do not silently fall back from production to sandbox.
 - Do not place real secret values in documentation.
 - Keep `.env.example` current.
+- Keep admin identifiers server-only. `RHS_ADMIN_USER_IDS` is allowed because Supabase Auth UUIDs are not browser-exposed and are not used as shared secrets.
 - Do not add `SUPABASE_SERVICE_ROLE_KEY` to runtime code until a narrowly scoped server-only service-role boundary is implemented and documented.
 
 ---
@@ -2043,7 +2057,8 @@ Do not implement production payment before authorization, pricing, idempotency, 
 
 Current delivery status as of 2026-07-10:
 
-- Items 1 through 4 have foundations implemented, but Phase 3 is not complete until sign-in UI, protected route shells, browser OAuth verification, and RLS/authorization tests are finished.
+- Items 1 through 4 have foundations implemented, including Google OAuth and magic-link auth UI, session-aware navigation, an authenticated account shell, first-login customer/handyman role selection, server-only admin UUID gating, and protected customer, handyman, and admin route shells.
+- Phase 3 is not complete until the first-role-claim migration is applied, Supabase/Google provider configuration, browser magic-link/OAuth verification, and RLS/authorization tests are finished.
 - Item 5 and later must not proceed as final product workflows until Phase 3 is complete.
 
 ---
@@ -2179,6 +2194,11 @@ For coding tasks, begin the proposed solution with pseudocode before presenting 
 
 ### 2026-07-10
 
+- Documented the implemented Phase 3 Google OAuth and magic-link auth UI, session-aware navigation, authenticated account shell, and protected role route shells.
+- Documented first-login customer/handyman role selection and server-only Supabase UUID admin gating.
+- Documented the protected-route proxy guard for unauthenticated requests.
+- Recorded that `NEXT_PUBLIC_APP_URL` is read for auth callback origin construction.
+- Clarified that the protected route shells are verification surfaces, not final product dashboards.
 - Documented the implemented Phase 3 Supabase Auth/Profile/Role backend foundation.
 - Recorded the live Supabase project target `csmisxwwrcyzttvybnsn`.
 - Recorded the Phase 3 database tables and RLS/grant boundaries.
