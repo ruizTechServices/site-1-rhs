@@ -1,5 +1,49 @@
 # Implementation Log
 
+## 2026-07-13 - Obsidian Knowledge Graph Alignment
+
+### Summary
+
+- Reviewed the committed Obsidian vault against the repository's current implemented Phase 3 state.
+- Moved planned marketplace and Square payment material from `permanent` to `reference` because those workflows are not implemented runtime architecture.
+- Added a concise architecture map so the implemented permanent nodes are discoverable without relying on graph appearance settings.
+- Rewrote the vault workflow node to describe the current vault structure and removed its stale link to a deleted cheat-sheet note.
+- Normalized architecture-node dependency headings to the required `System Dependencies and Connections` wording.
+
+### Files Added
+
+- `docs/Ruiz Home Services/permanent/Ruiz Home Services Architecture Map.md`: map of content for implemented Phase 3 architecture nodes and related reference notes.
+
+### Files Moved
+
+- `docs/Ruiz Home Services/permanent/Marketplace Service Lifecycle Decision Gates.md` to `docs/Ruiz Home Services/reference/Marketplace Service Lifecycle Decision Gates.md`: preserved the raw lifecycle concept as planning reference, not implemented architecture.
+- `docs/Ruiz Home Services/permanent/Square Payment Integration Boundary.md` to `docs/Ruiz Home Services/reference/Square Payment Integration Boundary.md`: preserved blocked Square constraints as reference material, not implemented architecture.
+
+### Files Updated
+
+- `docs/Ruiz Home Services/permanent/Obsidian Architecture Knowledge Graph Workflow.md`: refreshed current vault workflow, dependencies, and word count.
+- `docs/Ruiz Home Services/permanent/*.md`: normalized dependency section headings for implemented architecture nodes.
+
+### Validation
+
+- Ran Obsidian vault validator: passed. It scanned 13 notes, verified 10 permanent architecture-node word counts, confirmed declared counts match measured counts, confirmed all wikilinks resolve, and confirmed the two unimplemented planning notes live under `reference`.
+- Ran `npm run typecheck`: passed.
+- Ran `npm run test:auth-routes`: passed.
+- Ran `npm run test:logging`: passed.
+- Ran `npm run lint`: passed.
+- Ran `npm run build`: passed.
+- Ran `git diff --check`: passed with Git line-ending normalization warnings only.
+- Ran `npm audit --audit-level=moderate`: failed on the documented moderate PostCSS advisory through `next@16.2.10`; npm still offers only a forced breaking downgrade to `next@9.3.3`, so no dependency change was made.
+- Ran `supabase --version`: passed and reported `2.106.0`.
+- Ran `supabase migration list --local`: failed because local Supabase Postgres is not running on `127.0.0.1:54322`.
+- Ran `git check-ignore`: confirmed `.env`, `tsconfig.tsbuildinfo`, Supabase CLI `.temp`, and Obsidian `.obsidian` app state are ignored.
+
+### Known Risks
+
+- Marketplace lifecycle and Square notes remain planning references only. They must not be treated as implemented product or payment behavior.
+- Local Supabase migration-list validation still requires a running local Supabase Postgres service.
+- The moderate transitive PostCSS advisory remains unresolved until Next ships or the project approves a safe dependency strategy.
+
 ## 2026-07-13 - Repository Alignment and Cleanup
 
 ### Summary
@@ -65,8 +109,8 @@
 - `docs/Ruiz Home Services/permanent/Server Only Admin UUID Gate.md`: server-only admin allowlist boundary.
 - `docs/Ruiz Home Services/permanent/Role Protected Route Shells.md`: account, customer, handyman, and admin route-shell authorization pattern.
 - `docs/Ruiz Home Services/permanent/Structured JSON Logging Boundary.md`: structured logging, redaction, request ID, and 431 diagnostics boundary.
-- `docs/Ruiz Home Services/permanent/Marketplace Service Lifecycle Decision Gates.md`: planned customer-to-handyman lifecycle and unresolved product gates.
-- `docs/Ruiz Home Services/permanent/Square Payment Integration Boundary.md`: blocked Square payment architecture boundary.
+- `docs/Ruiz Home Services/reference/Marketplace Service Lifecycle Decision Gates.md`: planned customer-to-handyman lifecycle and unresolved product gates, later moved to `reference` because it is not implemented architecture.
+- `docs/Ruiz Home Services/reference/Square Payment Integration Boundary.md`: blocked Square payment constraints, later moved to `reference` because no Square runtime integration exists.
 - `docs/Ruiz Home Services/permanent/Obsidian Architecture Knowledge Graph Workflow.md`: vault maintenance, linking, and inbox-to-permanent workflow.
 
 ### Files Removed
